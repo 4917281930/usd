@@ -3,51 +3,46 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KillerWhalesResearcher</title>
+  <title>killerwhalesresearcher</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html, body {
       background: #ffffff;
       font-family: 'Inter', sans-serif;
       overflow: hidden;
       height: 100%;
+      width: 100%;
     }
-
     header {
       position: fixed;
       top: 0; left: 0; right: 0;
-      z-index: 100;
+      z-index: 1;
       height: 52px;
       display: flex;
       align-items: center;
       padding: 0 20px;
-      background: rgba(255,255,255,0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid #ebebeb;
     }
-
     .logo-text {
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 400;
       color: #111;
-      letter-spacing: .01em;
+      text-transform: lowercase;
+      font-variant: normal;
     }
-
     .coin {
       position: fixed;
-      z-index: 1;
-      pointer-events: none;
-      user-select: none;
+      top: 0; left: 0;
+      z-index: 999;
+      cursor: grab;
+      touch-action: none;
+      will-change: transform;
     }
-
-    .coin img {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
+    .coin:active { cursor: grabbing; }
   </style>
 </head>
 <body>
@@ -56,54 +51,106 @@
   </header>
 
   <script>
-    const BTC_IMG = 'https://cryptologos.cc/logos/bitcoin-btc-logo.png';
-    const COUNT = 28;
+    const COUNT = 21;
     const coins = [];
+    const ns = 'http://www.w3.org/2000/svg';
 
-    for (let i = 0; i < COUNT; i++) {
-      const size = 48 + Math.random() * 56;
-      const el = document.createElement('div');
-      el.className = 'coin';
-      el.style.width = size + 'px';
-      el.style.height = size + 'px';
-
-      const img = document.createElement('img');
-      img.src = BTC_IMG;
-      el.appendChild(img);
-      document.body.appendChild(el);
-
-      coins.push({
-        el,
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        size,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: (Math.random() - 0.5) * 0.6,
-        wobble: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.008 + Math.random() * 0.012,
-        alpha: 0.5 + Math.random() * 0.5,
-      });
-
-      el.style.opacity = coins[coins.length - 1].alpha;
+    function makeSVG(size) {
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 32 32');
+      svg.setAttribute('width', size);
+      svg.setAttribute('height', size);
+      const circle = document.createElementNS(ns, 'circle');
+      circle.setAttribute('cx', '16'); circle.setAttribute('cy', '16');
+      circle.setAttribute('r', '16'); circle.setAttribute('fill', '#F7931A');
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('fill', '#fff');
+      path.setAttribute('d', 'M22.1 14.3c.3-2-1.2-3.1-3.3-3.8l.7-2.7-1.7-.4-.7 2.7-1.3-.3.7-2.7-1.7-.4-.7 2.7-2.6-.7-.4 1.8s1.2.3 1.2.3c.7.2.8.7.8 1l-.8 3.3c0 .1.1.1.1.1l-.1-.1-1.1 4.5c-.1.2-.3.6-.9.4 0 0-1.2-.3-1.2-.3l-.9 1.9 2.5.6 1.4.4-.7 2.8 1.7.4.7-2.8 1.3.3-.7 2.8 1.7.4.7-2.8c2.8.5 4.9.3 5.8-2.2.7-2-.1-3.1-1.5-3.9 1.1-.2 1.9-1 2.2-2.5zm-3.9 5.5c-.5 2-3.9.9-5 .6l.9-3.5c1.1.3 4.6.8 4.1 2.9zm.5-5.5c-.5 1.8-3.3.9-4.2.7l.8-3.2c.9.2 3.9.7 3.4 2.5z');
+      svg.appendChild(circle);
+      svg.appendChild(path);
+      return svg;
     }
 
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    // Chia đều 21 logo trong màn hình, đảm bảo tất cả nằm trong viewport lúc load
+    for (let i = 0; i < COUNT; i++) {
+      const size = 46 + Math.random() * 54;
+      const div = document.createElement('div');
+      div.className = 'coin';
+      div.style.opacity = 0.55 + Math.random() * 0.45;
+      div.appendChild(makeSVG(size));
+      document.body.appendChild(div);
+
+      const coin = {
+        el: div, size,
+        // Đặt tất cả trong bounds màn hình, cách viền ít nhất size/2
+        x: size/2 + Math.random() * (W - size),
+        y: size/2 + Math.random() * (H - size),
+        vx: (Math.random() - 0.5) * 0.55,
+        vy: (Math.random() - 0.5) * 0.55,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.007 + Math.random() * 0.013,
+        dragging: false,
+        offX: 0, offY: 0,
+      };
+      coins.push(coin);
+
+      div.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        coin.dragging = true;
+        coin.vx = 0; coin.vy = 0;
+        coin.offX = e.clientX - coin.x;
+        coin.offY = e.clientY - coin.y;
+      });
+      div.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.touches[0];
+        coin.dragging = true;
+        coin.vx = 0; coin.vy = 0;
+        coin.offX = t.clientX - coin.x;
+        coin.offY = t.clientY - coin.y;
+      }, { passive: false });
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      for (const c of coins) if (c.dragging) { c.x = e.clientX - c.offX; c.y = e.clientY - c.offY; }
+    });
+    document.addEventListener('mouseup', () => {
+      for (const c of coins) if (c.dragging) {
+        c.dragging = false;
+        c.vx = (Math.random() - 0.5) * 0.8;
+        c.vy = (Math.random() - 0.5) * 0.8;
+      }
+    });
+    document.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      for (const c of coins) if (c.dragging) { c.x = t.clientX - c.offX; c.y = t.clientY - c.offY; }
+    }, { passive: false });
+    document.addEventListener('touchend', () => {
+      for (const c of coins) if (c.dragging) {
+        c.dragging = false;
+        c.vx = (Math.random() - 0.5) * 0.8;
+        c.vy = (Math.random() - 0.5) * 0.8;
+      }
+    });
+
     function animate() {
-      const W = window.innerWidth;
-      const H = window.innerHeight;
-
+      const W = window.innerWidth, H = window.innerHeight;
       for (const c of coins) {
-        c.wobble += c.wobbleSpeed;
-        c.x += c.vx + Math.sin(c.wobble) * 0.25;
-        c.y += c.vy + Math.cos(c.wobble) * 0.2;
-
-        if (c.x < -c.size)  c.x = W + c.size;
-        if (c.x > W + c.size) c.x = -c.size;
-        if (c.y < -c.size)  c.y = H + c.size;
-        if (c.y > H + c.size) c.y = -c.size;
-
+        if (!c.dragging) {
+          c.wobble += c.wobbleSpeed;
+          c.x += c.vx + Math.sin(c.wobble) * 0.28;
+          c.y += c.vy + Math.cos(c.wobble) * 0.22;
+          // Bounce off walls thay vì wrap — giữ logo trong màn hình
+          if (c.x - c.size/2 < 0)      { c.x = c.size/2;      c.vx = Math.abs(c.vx); }
+          if (c.x + c.size/2 > W)      { c.x = W - c.size/2;  c.vx = -Math.abs(c.vx); }
+          if (c.y - c.size/2 < 0)      { c.y = c.size/2;      c.vy = Math.abs(c.vy); }
+          if (c.y + c.size/2 > H)      { c.y = H - c.size/2;  c.vy = -Math.abs(c.vy); }
+        }
         c.el.style.transform = `translate(${c.x - c.size/2}px, ${c.y - c.size/2}px)`;
       }
-
       requestAnimationFrame(animate);
     }
 
